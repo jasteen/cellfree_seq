@@ -10,13 +10,11 @@ from utils import safe_make_dir
 def make_pipeline(state):
     '''Build the pipeline by constructing stages and connecting them together'''
     # Build an empty pipeline
-    pipeline = Pipeline(name='hiplexpipe_vardict')
+    pipeline = Pipeline(name='cellfree_seq')
     # Stages are dependent on the state
     stages = Stages(state)
 
     safe_make_dir('alignments')
-    safe_make_dir('metrics')
-    safe_make_dir('metrics/summary')
 
     # The original FASTQ files
     fastq_files = glob.glob('fastqs/*')
@@ -48,56 +46,112 @@ def make_pipeline(state):
         output='alignments/{sample[0]}.sort.hq.bam')
 
     pipeline.transform(
+        task_func=stages.run_connor,
+        name='run_connor',
+        input=output_from('align_bwa'),
+        filter=suffix('.sort.hq.bam'),
+        output='.sort.hq.connor.bam')
+    
+
+    safe_make_dir('metrics')
+    safe_make_dir('metrics/summary')
+    safe_make_dir('metrics/connor')
+
+    pipeline.transform(
         task_func=stages.intersect_bed,
-        name='intersect_bed',
+        name='intersect_bed_raw',
         input=output_from('align_bwa'),
         filter=formatter('.+/(?P<sample>[a-zA-Z0-9_-]+).sort.hq.bam'),
         output='metrics/summary/{sample[0]}.intersectbed.bam')
 
     pipeline.transform(
         task_func=stages.coverage_bed,
-        name='coverage_bed',
-        input=output_from('intersect_bed'),
+        name='coverage_bed_raw',
+        input=output_from('intersect_bed_raw'),
         filter=suffix('.intersectbed.bam'),
         output='.bedtools_hist_all.txt')
 
     pipeline.transform(
         task_func=stages.genome_reads,
-        name='genome_reads',
+        name='genome_reads_raw',
         input=output_from('align_bwa'),
         filter=formatter('.+/(?P<sample>[a-zA-Z0-9_-]+).sort.hq.bam'),
         output='metrics/summary/{sample[0]}.mapped_to_genome.txt')
 
     pipeline.transform(
         task_func=stages.target_reads,
-        name='target_reads',
-        input=output_from('intersect_bed'),
+        name='target_reads_raw',
+        input=output_from('intersect_bed_raw'),
         filter=suffix('.intersectbed.bam'),
         output='.mapped_to_target.txt')
 
     pipeline.transform(
         task_func=stages.total_reads,
-        name='total_reads',
+        name='total_reads_raw',
         input=output_from('align_bwa'),
         filter=formatter('.+/(?P<sample>[a-zA-Z0-9_-]+).sort.hq.bam'),
         output='metrics/summary/{sample[0]}.total_raw_reads.txt')
 
     pipeline.collate(
         task_func=stages.generate_stats,
-        name='generate_stats',
-        input=output_from('coverage_bed', 'genome_reads', 'target_reads', 'total_reads'),
+        name='generate_stats_raw',
+        input=output_from('coverage_bed_raw', 'genome_reads_raw', 'target_reads_raw', 'total_reads_raw'),
         filter=regex(r'.+/(.+)\.(bedtools_hist_all|mapped_to_genome|mapped_to_target|total_raw_reads)\.txt'),
         output=r'metrics/summary/all_sample.summary.\1.txt',
-        extras=[r'\1', 'all_sample.summary.txt'])
+        extras=[r'\1', 'summary.txt'])
     
+
+pipeline.transform(
+        task_func=stages.intersect_bed,
+        name='intersect_bed_connor',
+        input=output_from('run_connor'),
+        filter=formatter('.+/(?P<sample>[a-zA-Z0-9_-]+).sort.hq.connor.bam'),
+        output='metrics/connor/{sample[0]}.intersectbed.bam')
+
+    pipeline.transform(
+        task_func=stages.coverage_bed,
+        name='coverage_bed_connor',
+        input=output_from('intersect_bed_connor'),
+        filter=suffix('.intersectbed.bam'),
+        output='.bedtools_hist_all.txt')
+
+    pipeline.transform(
+        task_func=stages.genome_reads,
+        name='genome_reads_connor',
+        input=output_from('run_connor'),
+        filter=formatter('.+/(?P<sample>[a-zA-Z0-9_-]+).sort.hq.connor.bam'),
+        output='metrics/summary/{sample[0]}.mapped_to_genome.txt')
+
+    pipeline.transform(
+        task_func=stages.target_reads,
+        name='target_reads_connor',
+        input=output_from('intersect_bed_connor'),
+        filter=suffix('.intersectbed.bam'),
+        output='.mapped_to_target.txt')
+
+    pipeline.transform(
+        task_func=stages.total_reads,
+        name='total_reads_connor',
+        input=output_from('run_connor'),
+        filter=formatter('.+/(?P<sample>[a-zA-Z0-9_-]+).sort.hq.connor.bam'),
+        output='metrics/summary/{sample[0]}.total_raw_reads.txt')
+
+    pipeline.collate(
+        task_func=stages.generate_stats,
+        name='generate_stats_connor',
+        input=output_from('coverage_bed_connor', 'genome_reads_connor', 'target_reads_connor', 'total_reads_connor'),
+        filter=regex(r'.+/(.+)\.(bedtools_hist_all|mapped_to_genome|mapped_to_target|total_raw_reads)\.txt'),
+        output=r'metrics/connor/all_sample.summary.\1.txt',
+        extras=[r'\1', 'connor.summary.txt'])
+
     safe_make_dir('variants')
     safe_make_dir('variants/vardict')
    
     pipeline.transform(
         task_func=stages.run_vardict,
         name='run_vardict',
-        input=output_from('align_bwa'),
-        filter=formatter('.+/(?P<sample>[a-zA-Z0-9_-]+).sort.hq.bam'),
+        input=output_from('run_connor'),
+        filter=formatter('.+/(?P<sample>[a-zA-Z0-9_-]+).sort.hq.connor.bam'),
         output='variants/vardict/{sample[0]}.vcf',
         extras=['{sample[0]}'])   
  

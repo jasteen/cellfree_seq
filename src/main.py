@@ -7,7 +7,7 @@ Copyright: 2015
 
 See ../README.md for details about how to use the program.
 
-Repository: https://github.com/khalidm/hiplexpipe_vardict
+Repository: https://github.com/khalidm/cellfree_seq
 '''
 
 from __future__ import print_function

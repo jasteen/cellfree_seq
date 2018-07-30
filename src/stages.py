@@ -32,17 +32,15 @@ class Stages(object):
         # Reference genome and interval files
         self.reference = self.get_options('ref_grch37')
         self.interval_file = self.get_options('interval_file')
-        self.interval_file_QC = self.get_options('interval_file_QC')
+        self.CONSENSUS_FREQ_THRESHOLD = self.get_options('CONSENSUS_FREQ_THRESHOL')        
+        self.MIN_FAMILY_SIZE_THRESHOLD = self.get_options('MIN_FAMILY_SIZE_THRESHOLD') 
+        self.UMT_DISTANCE_THRESHOLD = self.get_options('UMT_DISTANCE_THRESHOLD') 
         self.AF_THR = self.get_options('AF_THR')
         self.vardict_bed = self.get_options('vardict_bed')
-        self.vardict_bed_QC = self.get_options('vardict_bed_QC')
         # Programs and program settings
         self.other_vep = self.get_options('other_vep')
         # Annotation resources
         self.dbsnp_b37 = self.get_options('dbsnp_b37')
-        self.brcaex = self.get_options('vep_brcaex')
-        self.gnomad = self.get_options('vep_gnomad')
-        self.revel = self.get_options('vep_revel')
         self.maxentscan = self.get_options('vep_maxentscan')
         self.exac = self.get_options('vep_exac')
         self.dbnsfp = self.get_options('vep_dbnsfp')
@@ -77,14 +75,23 @@ class Stages(object):
                           bam=bam_out)
         run_stage(self.state, 'align_bwa', command)
 
-    def run_vardict(self, bam_in, vcf_out, sample_name):
-        '''Run vardict on each BAM file'''
-        
-        if "QC" in bam_in: 
-            vardict_bed = self.vardict_bed_QC 
-        else:  
-            vardict_bed = self.vardict_bed 
 
+    def run_connor(self, bam_in, bam_out, sample_name)
+        '''run connor on bam file'''
+
+        command = 'connor --force -f {CONSENSUS_FREQ_THRESHOLD} ' \
+                  '-s {MIN_FAMILY_SIZE_THRESHOLD} ' \
+                  '-d {UMT_DISTANCE_THRESHOLD} ' \
+                  '{bam_in} {bam_out}'.format(
+                                    CONSENSUS_FREQ_THRESHOLD=self.CONSENSUS_FREQ_THRESHOLD,
+                                    MIN_FAMILY_SIZE_THRESHOLD=self.MIN_FAMILY_SIZE_THRESHOLD,
+                                    UMT_DISTANCE_THRESHOLD=self.UMT_DISTANCE_THRESHOLD,
+                                    bam_in=bam_in,bam_out=bam_out)
+        run_stage(self.state, 'run_connor', command)
+
+    def run_vardict(self, bam_in, vcf_out, sample_name):
+        '''Run vardict on each deduplicated BAM file'''
+        
         command = 'export PATH=/home/jste0021/scripts/git_controlled/VarDict:$PATH; ' \
                   'vardict -G {reference} -f {AF_THR} -N {sample_name} -b {bam_in} -c 1 -S 2 -E 3 -g 4 {vardict_bed} | ' \
                   'teststrandbias.R | ' \
@@ -93,7 +100,7 @@ class Stages(object):
                              AF_THR=self.AF_THR,
                              sample_name=sample_name,
                              bam_in=bam_in,
-                             vardict_bed=vardict_bed,
+                             vardict_bed=self.vardict_bed,
                              vcf_out=vcf_out)
         run_stage(self.state, 'run_vardict', command)
                                
@@ -144,11 +151,6 @@ class Stages(object):
                       "--sift b --polyphen b --symbol --numbers --biotype " \
                       "--total_length --hgvs --format vcf " \
                       "--vcf --force_overwrite --flag_pick --no_stats " \
-                      "--custom {brcaexpath},brcaex,vcf,exact,0,Clinical_significance_ENIGMA," \
-                      "Comment_on_clinical_significance_ENIGMA,Date_last_evaluated_ENIGMA," \
-                      "Pathogenicity_expert,HGVS_cDNA,HGVS_Protein,BIC_Nomenclature " \
-                      "--custom {gnomadpath},gnomAD,vcf,exact,0,AF_NFE,AN_NFE " \
-                      "--custom {revelpath},RVL,vcf,exact,0,REVEL_SCORE " \
                       "--plugin MaxEntScan,{maxentscanpath} " \
                       "--plugin ExAC,{exacpath},AC,AN " \
                       "--plugin dbNSFP,{dbnsfppath},REVEL_score,REVEL_rankscore " \
@@ -161,9 +163,6 @@ class Stages(object):
                                             vcf_out=vcf_out,
                                             vcf_in=vcf_in,
                                             reference=self.reference,
-                                            brcaexpath=self.brcaex,
-                                            gnomadpath=self.gnomad,
-                                            revelpath=self.revel,
                                             maxentscanpath=self.maxentscan,
                                             exacpath=self.exac,
                                             dbnsfppath=self.dbnsfp,

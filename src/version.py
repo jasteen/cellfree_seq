@@ -8,4 +8,4 @@ configuration.
 
 import pkg_resources  # part of setuptools
 
-version = pkg_resources.require("hiplexpipe_vardict")[0].version
+version = pkg_resources.require("cellfree_seq")[0].version

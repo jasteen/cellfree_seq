@@ -3,17 +3,17 @@
 from setuptools import setup
 
 setup(
-    name='hiplexpipe_vardict',
+    name='cellfree_seq',
     version='0.1',
-    author='Khalid Mahmood',
-    author_email='khalid.mahmood@unimelb.edu.au',
+    author='Jason Steen',
+    author_email='jason.steen@monash.edu',
     packages=['src'],
     entry_points={
-        'console_scripts': ['hiplexpipe_vardict = src.main:main']
+        'console_scripts': ['cellfree_seq = src.main:main']
     },
-    url='https://github.com/khalidm/hiplexpipe',
+    url='https://github.com/SoutheyLab/hiplexpipe',
     license='LICENSE.txt',
-    description='hiplexpipe is a bioinformatics pipeline to call variants from HiPlex data.',
+    description='this program will run a cellfree pipeline on any fastqs',
     long_description=open('README.md').read(),
     install_requires=[
         "ruffus == 2.6.3",
