@@ -100,8 +100,7 @@ def make_pipeline(state):
         output=r'metrics/summary/all_sample.summary.\1.txt',
         extras=[r'\1', 'summary.txt'])
     
-
-pipeline.transform(
+    pipeline.transform(
         task_func=stages.intersect_bed,
         name='intersect_bed_connor',
         input=output_from('run_connor'),
