@@ -33,7 +33,7 @@ def make_pipeline(state):
         input=output_from('original_fastqs'),
         # Match the R1 (read 1) FASTQ file and grab the path and sample name.
         # This will be the first input to the stage.
-        filter=formatter('.+/(?P<sample>[a-zA-Z0-9_-]+)_R1..fastq.gz'),
+        filter=formatter('.+/(?P<sample>[a-zA-Z0-9_-]+)_R1.fastq.gz'),
         # Add one more inputs to the stage:
         #    1. The corresponding R2 FASTQ file
         add_inputs=add_inputs(
