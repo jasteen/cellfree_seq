@@ -76,7 +76,7 @@ class Stages(object):
         run_stage(self.state, 'align_bwa', command)
 
 
-    def run_connor(self, bam_in, bam_out, sample_name):
+    def run_connor(self, bam_in, bam_out):
         '''run connor on bam file'''
 
         command = 'connor --force -f {CONSENSUS_FREQ_THRESHOLD} ' \
