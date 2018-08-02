@@ -31,6 +31,7 @@ class Stages(object):
         self.state = state
         # Reference genome and interval files
         self.reference = self.get_options('ref_grch37')
+        self.genome_dict = self.get_options('genome_dict')
         self.interval_file = self.get_options('interval_file')
         self.CONSENSUS_FREQ_THRESHOLD = self.get_options('CONSENSUS_FREQ_THRESHOL')        
         self.MIN_FAMILY_SIZE_THRESHOLD = self.get_options('MIN_FAMILY_SIZE_THRESHOLD') 
@@ -200,9 +201,10 @@ class Stages(object):
         else:
             interval_file = self.interval_file
 
-        command = "coverageBed -b {bam_in} -a {interval_file} -hist | grep all > {txt_out}" \
+        command = "coverageBed -b {bam_in} -a {interval_file} -sorted -hist -g {genome_dict} | grep all > {txt_out}" \
                 .format(bam_in=bam_in,
                         interval_file=interval_file,
+                        genome_dict=self.genome_dict,
                         txt_out=txt_out)
         run_stage(self.state, 'coverage_bed', command)
 
